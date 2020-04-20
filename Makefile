@@ -1,15 +1,19 @@
 BUILD_DIR := ./build
-SRC_DIR := ./src
 
-SRCS = $(wildcard $(SRC_DIR)/lox/*.java)
+vpath %.java src
 
-JFLAGS = -g -d $(BUILD_DIR)
+JFLAGS = -g -d $(BUILD_DIR) -Xlint
 JC = javac
 
-all: $(SRCS)
-	$(JC) $(JFLAGS) $(SRCS)
+GENERATED = src/lox/Expr.java
+SRCS := $(wildcard src/lox/*.java)
+ifeq (,$(findstring $(GENERATED),$(SRCS)))
+	SRCS += $(GENERATED)
+endif
 
-.PHONY: clean
+$(patsubst src/%.java, $(BUILD_DIR)/%.class, $(SRCS)): $(SRCS)
+	$(JC) $(JFLAGS) $^
 
-clean:
-	$(RM) -r $(BUILD_DIR)
+$(GENERATED): tool/GenerateAst.java
+	$(JC) $(JFLAGS) $^
+	java -cp $(BUILD_DIR) tool.GenerateAst src/lox
