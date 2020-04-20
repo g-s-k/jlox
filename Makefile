@@ -1,4 +1,4 @@
-BUILD_DIR := ./build
+BUILD_DIR := build
 
 vpath %.java src
 
@@ -11,9 +11,12 @@ ifeq (,$(findstring $(GENERATED),$(SRCS)))
 	SRCS += $(GENERATED)
 endif
 
-$(patsubst src/%.java, $(BUILD_DIR)/%.class, $(SRCS)): $(SRCS)
+$(patsubst src/%.java, $(BUILD_DIR)/%.class, $(SRCS)): $(SRCS) | $(BUILD_DIR)
 	$(JC) $(JFLAGS) $^
 
-$(GENERATED): tool/GenerateAst.java
+$(BUILD_DIR):
+	mkdir $(BUILD_DIR)
+
+$(GENERATED): tool/GenerateAst.java | $(BUILD_DIR)
 	$(JC) $(JFLAGS) $^
 	java -cp $(BUILD_DIR) tool.GenerateAst src/lox
