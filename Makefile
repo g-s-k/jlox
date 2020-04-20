@@ -5,11 +5,9 @@ SRCS = $(wildcard $(SRC_DIR)/lox/*.java)
 
 JFLAGS = -g -d $(BUILD_DIR)
 JC = javac
-.SUFFIXES: .java .class
-.java.class:
-	$(JC) $(JFLAGS) $<
 
-all: $(SRCS:.java=.class)
+all: $(SRCS)
+	$(JC) $(JFLAGS) $(SRCS)
 
 .PHONY: clean
 
