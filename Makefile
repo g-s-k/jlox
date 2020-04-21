@@ -15,10 +15,12 @@ run//%: %.class
 	java -cp $(BUILD_DIR) $(subst /,.,$*) $(ARGS)
 
 # this is the main (and default) target
-lox/Lox.class: lox/Expr.java
+SRCS := $(wildcard $(SRC_DIR)/lox/*.java)
+GENERATED := lox/Expr.java lox/Stmt.java
+lox/Lox.class: $(SRCS) $(GENERATED)
 
 # generated code requires building and running tool
-lox/Expr.java: tool/GenerateAst.class
+$(GENERATED): tool/GenerateAst.class
 	$(MAKE) run//tool/GenerateAst ARGS=$(SRC_DIR)/lox
 
 # works without this on some platforms, fails on others

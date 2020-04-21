@@ -10,6 +10,7 @@ import java.util.List;
 
 public class Lox {
   private static final Interpreter interpreter = new Interpreter();
+  static boolean parseSilently = false;
   static boolean hadError = false;
   static boolean hadRuntimeError = false;
 
@@ -26,10 +27,13 @@ public class Lox {
 
   private static void runFile(String path) throws IOException {
     byte[] bytes = Files.readAllBytes(Paths.get(path));
-    run(new String(bytes, Charset.defaultCharset()));
+    Parser parser = setupParser(new String(bytes, Charset.defaultCharset()));
+    List<Stmt> statements = parser.parse();
 
     // Indicate an error in the exit code.
     if (hadError) System.exit(65);
+
+    interpreter.interpret(statements);
     if (hadRuntimeError) System.exit(70);
   }
 
@@ -37,34 +41,34 @@ public class Lox {
     InputStreamReader input = new InputStreamReader(System.in);
     BufferedReader reader = new BufferedReader(input);
 
-    for (;;) {
+    while (true) {
       System.out.print("> ");
       String line = reader.readLine();
-      if (line == null) {
-        System.out.println("\nexit");
-        return;
+      if (line == null) break;
+
+      Parser parser = setupParser(line);
+      parseSilently = true;
+      List<Stmt> statements = parser.parse();
+      parseSilently = false;
+      if (hadError) {
+        parser = setupParser(line);
+        Expr expression = parser.expression();
+        interpreter.eval(expression);
+      } else {
+        interpreter.interpret(statements);
       }
 
-      run(line);
       hadError = false;
     }
+
+    System.out.println("\nexit");
   }
 
-  private static void run(String source) {
+  private static Parser setupParser(String source) {
     Scanner scanner = new Scanner(source);
     List<Token> tokens = scanner.scanTokens();
 
-    Parser parser = new Parser(tokens);
-    Expr expression = parser.parse();
-
-    // Stop if there was a syntax error.
-    if (hadError) return;
-
-    interpreter.interpret(expression);
-  }
-
-  static void error(int line, String message) {
-    report(line, "", message);
+    return new Parser(tokens);
   }
 
   private static void report(int line, String where, String message) {
@@ -73,7 +77,16 @@ public class Lox {
     hadError = true;
   }
 
+  static void error(int line, String message) {
+    if (parseSilently) report(line, "", message);
+  }
+
   static void error(Token token, String message) {
+    if (parseSilently) {
+      hadError = true;
+      return;
+    }
+
     if (token.type == TokenType.EOF) {
       report(token.line, " at end", message);
     } else {
