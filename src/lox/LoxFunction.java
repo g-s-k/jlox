@@ -3,10 +3,15 @@ package lox;
 import java.util.List;
 
 class LoxFunction implements LoxCallable {
+  static String THIS = "this";
+
   private final Stmt.Function declaration;
   private final Environment closure;
+  private final boolean isInitializer;
 
-  LoxFunction(Stmt.Function declaration, Environment closure) {
+  LoxFunction(Stmt.Function declaration, Environment closure,
+              boolean isInitializer) {
+    this.isInitializer = isInitializer;
     this.closure = closure;
     this.declaration = declaration;
   }
@@ -26,14 +31,23 @@ class LoxFunction implements LoxCallable {
     try {
       interpreter.executeBlock(declaration.body, environment);
     } catch (Return returnValue) {
+      if (isInitializer) return closure.getAt(0, THIS);
+
       return returnValue.value;
     }
 
+    if (isInitializer) return closure.getAt(0, THIS);
     return null;
   }
 
   @Override
   public String toString() {
     return "<fn " + declaration.name.lexeme + ">";
+  }
+
+  LoxFunction bind(LoxInstance instance) {
+    Environment environment = new Environment(closure);
+    environment.define(THIS, instance);
+    return new LoxFunction(declaration, environment, isInitializer);
   }
 }

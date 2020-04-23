@@ -17,7 +17,7 @@ run//%: %.class
 # this is the main (and default) target
 SRCS := $(wildcard $(SRC_DIR)/lox/*.java)
 GENERATED := lox/Expr.java lox/Stmt.java
-lox/Lox.class: $(SRCS) $(GENERATED) | tool/GenerateAst.class
+lox/Lox.class: $(GENERATED) $(SRCS) | tool/GenerateAst.class
 
 # generated code requires building and running tool
 $(GENERATED): tool/GenerateAst.class

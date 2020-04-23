@@ -6,6 +6,7 @@ import java.io.InputStreamReader;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.Arrays;
 import java.util.List;
 
 public class Lox {
@@ -25,12 +26,16 @@ public class Lox {
     }
   }
 
+  // For scripts, indicate an error in the exit code.
   private static void runFile(String path) throws IOException {
     byte[] bytes = Files.readAllBytes(Paths.get(path));
+
     Parser parser = setupParser(new String(bytes, Charset.defaultCharset()));
     List<Stmt> statements = parser.parse();
+    if (hadError) System.exit(65);
 
-    // Indicate an error in the exit code.
+    Resolver resolver = new Resolver(interpreter);
+    resolver.resolve(statements);
     if (hadError) System.exit(65);
 
     interpreter.interpret(statements);
@@ -50,12 +55,22 @@ public class Lox {
       parseSilently = true;
       List<Stmt> statements = parser.parse();
       parseSilently = false;
+
       if (hadError) {
         parser = setupParser(line);
         Expr expression = parser.expression();
-        interpreter.eval(expression);
-      } else {
+        statements = Arrays.asList(new Stmt.Print(expression));
+      }
+
+      if (!hadError) {
+        Resolver resolver = new Resolver(interpreter);
+        resolver.resolve(statements);
+      }
+
+      if (!hadError) {
         interpreter.interpret(statements);
+
+        hadRuntimeError = false;
       }
 
       hadError = false;
@@ -72,21 +87,18 @@ public class Lox {
   }
 
   private static void report(int line, String where, String message) {
-    System.err.println(
-        "[line " + line + "] Error" + where + ": " + message);
     hadError = true;
+
+    if (!parseSilently) {
+      System.err.println("[line " + line + "] Error" + where + ": " + message);
+    }
   }
 
   static void error(int line, String message) {
-    if (parseSilently) report(line, "", message);
+    report(line, "", message);
   }
 
   static void error(Token token, String message) {
-    if (parseSilently) {
-      hadError = true;
-      return;
-    }
-
     if (token.type == TokenType.EOF) {
       report(token.line, " at end", message);
     } else {
