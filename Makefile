@@ -15,7 +15,7 @@ run//%: %.class
 	java -cp $(BUILD_DIR) $(subst /,.,$*) $(ARGS)
 
 # this is the main (and default) target
-SRCS := $(shell git ls-files src/lox)
+SRCS := $(shell git ls-files $(SRC_DIR)/lox)
 GENERATED := lox/Expr.java lox/Stmt.java
 lox/Lox.class: $(GENERATED) $(SRCS) | tool/GenerateAst.class
 
